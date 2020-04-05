@@ -1,6 +1,6 @@
 ---
 title: "Importing data in R"
-author: "Shih Ching Fu"
+author: "[Shih Ching Fu](https://shihchingfu.com)"
 date: "March 2020"
 output:
   html_document:
@@ -13,13 +13,18 @@ output:
     theme: readable
     highlight: haddock
     code_folding: show
+knit: 
+  (function(input_file, encoding) {
+    rmarkdown::render(input_file,
+                      encoding=encoding,
+                      output_file=file.path(dirname(input_file), 'docs', 'index.html'))})
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,tidy = TRUE, paged.print = TRUE )
+#knitr::opts_chunk$set(echo = TRUE,tidy = TRUE, paged.print = TRUE )
 ```
 
-# Summary
+# Introduction
 
 This is a brief guide to importing various data file formats into `R`.
 
@@ -28,7 +33,9 @@ The file formats covered here are:
 - Plain-text files (`.CSV`, `.TSV`)
 - Microsoft Excel spreadsheets (`.XLSX`)
 - Google Sheets
-- SPSS, STATA, and SAS data files (`.SAV`, `.DTA`, `.SAS7BDAT`)
+- SPSS (`.SAV`)
+- STATA (`.DTA`), and 
+- SAS (`.SAS7BDAT`)
 
 The following `R` packages are used in this guide:
 
@@ -56,18 +63,17 @@ install.packages("haven")
 
 ## Data frames
 
-Data in `R` are typically stored as *data frames* where values are arranged into rows and columns akin to a table. Below are the first ten rows of the example `iris`[^iris] data frame that comes packaged with `R`:
+Data in `R` are typically stored as *data frames* where values are arranged into rows and columns akin to a table. Below are the first five rows of the example `iris`[^iris] data frame that comes packaged with `R`:
 
 [^iris]: Anderson, Edgar (1935). The irises of the Gaspe Peninsula, *Bulletin of the American Iris Society*, **59**, 2–5
 
-
 ```{r echo=FALSE}
-head(iris, n = 10)
+head(iris, n = 5)
 ```
 
 Data frames have a number of characteristics worth mentioning:
 
-- Each column of a data frame constitutes a *vector* and like all vectors in `R` must contain only a single data type, e.g., numeric, factor, logical, character, etc.
+- Each column constitutes a *vector* and like all vectors in `R` they must contain only a single data type, e.g., numeric, factor, logical, character, etc.
 - Each column however may store a different data type from other columns.
 - Each column is named and can be accessed by that name using dollar sign (`$`) notation. For example, `iris$Sepal.Width` returns the `Sepal.Width` column of the `iris` data frame as a vector.
 - Almost all `R` functions are built to accept data frames as input.
@@ -76,7 +82,7 @@ In the following examples, data is imported into `R` as data frames.
 
 ## Tidy data
 
-Before going further it is worth considering the arrangement of the values in your dataset as you import it. By this we mean what do the rows and columns of your dataset represent? In particular, we'd like to commend to you the so-called ***tidy*** data format.
+Before going further it is worth considering the arrangement of the values in your dataset as you import it. By this we mean what do the rows and columns of your dataset represent? In particular, I'd like to commend to you the so-called ***tidy*** data format.
 
 Tidy data is tabular data that is organised such that:
 
@@ -84,20 +90,21 @@ Tidy data is tabular data that is organised such that:
 2. each variable has its own column, and
 3. each value has its own cell.
 
-This is sometimes referred to tall or long form data because of its shape. By contrast you may have 'wide' data where, for example, columns are measurements of the *same* variable but taken at different time points. Both are valid ways to store data but we'd argue that tidy data is easier to manipulate. This is the philosophy behind the omnibus of `R` packages that constitute the `tidyverse` bundle of `R` packages.
+This is sometimes referred to 'tall' or 'long' form data because of its shape. By contrast you may have 'wide' data which, for example, has columns containing measurements of the *same* variable but taken at different time points. 
 
-We will see some examples of both kinds of data but the `R` commands for transforming between these  is best covered in a separate tutorial.
+Both wide or tidy are valid ways to store data but I'd argue that tidy data is easier to manipulate. This is the philosophy behind the omnibus of packages that constitutes the `tidyverse` bundle of `R` packages.
+
+We will see examples of both kinds of data in this guide but the usage of `R` commands for transforming between these types is best covered in a separate tutorial.
 
 ## Data used in this guide
 
-The dataset used in this guide comes from *Exploring Longitudinal Data on Change*[^eldc] by Judith D. Singer and John B. Willett (2003). It comprises survey data assessing the tolerance of teenage participants towards various deviant behaviours (!).
+The dataset used in this guide comes from *Exploring Longitudinal Data on Change*[^eldc] by Judith D. Singer and John B. Willett (2003), as accessed via the Textbook Examples page hosted by [UCLA IDRE](https://stats.idre.ucla.edu/other/examples/alda/). It comprises survey data assessing the tolerance of teenage participants towards various deviant (!) behaviours.
 
 [^eldc]: Judith D. Singer, John B. Willett (2003), Exploring Longitudinal Data on Change, DOI: [10.1093/acprof:oso/9780195152968.003.0002](https://doi.org/10.1093/acprof:oso/9780195152968.003.0002)
 
-
 # Plain-text files
 
-Plain-text files are human-readable once opened in a simple text editor. The most commonly encounted plain-text data files are comma separated values or tab separated values, CSV and TSV respectively. These are highly portable and often the *de facto* file format for sharing datasets. 
+Plain-text files are human-readable files when opened in a simple text editor. The most commonly encounted plain-text data files are comma separated values or tab separated values, `.CSV` and `.TSV` respectively. These are highly portable and often the *de facto* file format for sharing datasets. 
 
 The `readr` package has three useful functions for reading plain-text data files:
 
@@ -106,7 +113,14 @@ The `readr` package has three useful functions for reading plain-text data files
 3. `read_delim()`
 
 ```{r}
+# Load the readr package
 library(readr)
+```
+
+Below is a preview of the contents of the `.CSV` file that we'll be importing. Notice the commas `,` delimiting the values.
+
+```{r echo=FALSE}
+cat(readLines("data/tolerance.csv"), sep = "\n")
 ```
 
 ```{r}
@@ -114,34 +128,46 @@ library(readr)
 tol_csv <- read_csv("data/tolerance.csv")
 ```
 
-Notice that `read_csv()` and indeed all the `read_` functions below print out the data types it has detected for each column. In this instance they are all `double`s or double precision floating point numbers, i.e., real numbers on the number line.
+The `read_csv()` and all its cousin `read_X()` functions print out a summary of the data types it has detected and assigned to each loaded column. In this instance they are all `double`s (sort for 'double precision floating point number') otherwise known as real numbers on the number line.
 
 ```{r}
 # Print out the first six rows of the data frame
 head(tol_csv)
 ```
 
-It would be worth doing some wrangling to correct some of the data types. For example, `id`, `male`, and `time` are more sensibly treated as categorical variables or `factor`s in `R`.
+It would be worth doing some wrangling to correct some of the data types in this data. For example, `id`, `male`, and `time` are probably more sensibly treated as categorical variables or `factor`s in `R`.
 
-```{r}
+The sample `.TSV` file has similar content but of course delimited by tab characters:
+
+```{r echo=FALSE}
+cat(readLines("data/tolerance.tsv", n = 6), sep = "\n")
+```
+
+```{r message=FALSE}
 # Read tab separated value (TSV) file
 tol_tsv <- read_tsv("data/tolerance.tsv")
 head(tol_tsv)
 ```
 
-```{r}
-# Read a text file delimited by carets
-tol_delim <- read_delim("data/tolerance_pp.txt", delim = "$")
-head(tol_delim, n = 10)
+Lastly, the `delim =` argument to the `read_delim()` function allows us to specify a custom delimiting character. Below are the first seven lines of a mocked-up file using dollar sign `$` delimiters:
+
+```{r echo=FALSE}
+cat(readLines("data/tolerance_pp.txt", n = 7), sep = "\n")
 ```
 
-Notice that of the three datasets imported above, only the third (`tol_delim`) is in *tidy* format. The first two data frames have information stored in both their cells and their headers. For example, the column label `TOL11` stands for tolerance value taken at age 11; two variables tolerance and time point. In contrast, the tidy data frame splits out values for each time point into distinct rows and adds an extra column for the time.
+```{r message=FALSE}
+# Read a text file delimited by dollar signs
+tol_delim <- read_delim("data/tolerance_pp.txt", delim = "$")
+head(tol_delim)
+```
+
+Notice that of the three datasets imported above, only the third (`tol_delim`) is in *tidy* format. The first two data frames have information stored in both their cells *and* their headers. For example, the column label `TOL11` stands for tolerance value taken at age 11; it encodes the two variables 'tolerance' and 'time'. In contrast, the tidy data frame splits out values for each time point into distinct rows and adds an extra column: 'time'.
 
 ## `data.table` package
 
-An alternative function for importing plain-text data files is `fread()` in the `data.table` package. It is extremely fast and powerful and can often identify the delimiter character automatically. Because of its speed it's highly recommended for reading in very large data files.
+Another function for importing plain-text data files is `fread()` in the `data.table` package. It is extremely fast and powerful and can often identify the delimiter characters automatically. Because of its speed I highly recommend it for reading large data files.
 
-```{r}
+```{r message=FALSE}
 library(data.table)
 tol_dt <- fread(file = "data/tolerance.tsv")
 head(tol_dt)
@@ -149,9 +175,9 @@ head(tol_dt)
 
 # Microsoft Excel
 
-In some disciplines Microsoft Excel spreadsheets have become the standard file format to store and process data. However, more complex analyses are available in `R` so it may be worthwhile switching over.
+In some disciplines Microsoft Excel spreadsheets are the standard file format to store and process data. However, since `R` offers many more complex analyses it may be worthwhile bringing that data over.
 
-The `readxl` package contains the function `read_excel()` for reading in .XLS or .XLSX files.
+The `readxl` package contains the function `read_excel()` for reading in `.XLS` and `.XLSX` files.
 
 ```{r}
 library(readxl)
@@ -159,13 +185,14 @@ tol_xlsx <- read_excel("data/tolerances.xlsx")
 head(tol_xlsx)
 ```
 
-However, one distinction between Excel spreadsheets and 'flat' plain-text files is that the former may comprise several worksheets. To see the worksheets in an Excel spreadsheet use the `excel_sheets()` function.
+One important distinction between Excel spreadsheets and 'flat' plain-text files is that the former may comprise several worksheets. To see the worksheets in an Excel spreadsheet use the `excel_sheets()` function:
 
 ```{r}
+# List the worksheets in a spreadsheet
 excel_sheets("data/tolerances.xlsx")
 ```
 
-By default the `read_excel()` function reads the first worksheet in the .XLSX file. The `sheet = ` argument specifies which worksheet to import.
+By default the `read_excel()` function reads the first worksheet in the `.XLSX` file. The `sheet =` argument specifies which worksheet to import, either the number or the name of the sheet.
 
 ```{r cache=TRUE}
 tol_xlsx2 <- read_excel("data/tolerances.xlsx", sheet = "tolerance_pp")
@@ -175,30 +202,30 @@ head(tol_xlsx2)
 
 # Google Sheets
 
-One convenient way to store and share (non-sensitve) data is using Google Sheets. The package `googlesheets4` is built for downloading online Google Sheets into local data frames, including the handling of Google authentication and sign-in.
+One convenient way to store and share (non-sensitve) data is using Google Sheets. The package `googlesheets4` is built for downloading online Google Sheets into local data frames and handles any Google authentication and sign-in.
 
 ```{r}
 library(googlesheets4)
 ```
 
-The `sheets_get()` function retrieves metadata about a Google Sheet.
+The `sheets_get()` function retrieves the metadata about a Google Sheet.
 
 ```{r}
-# URL to the gapminder Google Sheet.
+# URL to the gapminder Google Sheet
 url <- "https://docs.google.com/spreadsheets/d/1U6Cf_qEOhiR9AZqTqS3mbMF3zt2db48ZP5v3rkrAEJY/edit#gid=780868077"
-sheets_deauth()
+sheets_deauth() # publicly shared sheets don't need authentication
 sheets_get(url)
 ```
 
-Knowing the names of the worksheets we can import them by name or number using `sheets_read()`.
+Knowing the names of the worksheets we can import them by name or number using `sheets_read()`:
 
-```{r}
+```{r message=FALSE}
 # 4th worksheet of the gapminder Google Sheet corresponds to European data
 gapminder_eu <- sheets_read(url, sheet = 4)
 head(gapminder_eu)
 ```
 
-# Statistical Software
+# Other Statistical Software 
 
 The `haven` package has functions to import SPSS, SAS, and STATA files.
 
@@ -211,7 +238,6 @@ Use `read_sav()` or `read_spss()` to import SPSS `.SAV` files.
 ```{r}
 # SPSS
 tol_sav <- read_sav("data/tolerance.sav")
-head(tol_sav)
 ```
 
 Use `read_sas()` to import SAS `.SAS7BDAT` files.
@@ -219,7 +245,6 @@ Use `read_sas()` to import SAS `.SAS7BDAT` files.
 ```{r}
 # SAS
 tol_sas <- read_sas("data/tolerance.sas7bdat")
-head(tol_sas)
 ```
 
 Use `read_dta()` or `read_stata()` to import STATA `.DTA` files.
@@ -227,15 +252,12 @@ Use `read_dta()` or `read_stata()` to import STATA `.DTA` files.
 ```{r}
 # STATA
 tol_dta <- read_dta("data/tolerance.dta")
-head(tol_dta)
 ```
 
 
 # More!
 
-This guide has only covered a few of the data formats that `R` can accommodate. Other common sources of data include SQL databases, cloud-based APIs, and even scraping directly from webpages. Take a look at the 'R Data Import/Export'[^rdie] manual for a broader summary of what's available.
-
-
+This guide only covers a few of the data formats that `R` can accommodate. Other common sources of data include SQL databases, cloud-based APIs, and even scraping directly from webpages. Take a look at the 'R Data Import/Export'[^rdie] manual for a broader summary of what's available.
 
 [^rdie]: [R Data Import/Export](https://cran.r-project.org/doc/manuals/r-release/R-data.html) manual
 
